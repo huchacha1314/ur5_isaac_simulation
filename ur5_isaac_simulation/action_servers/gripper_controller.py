@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Create and action server for the UR5 gripper. The action server is called
-'ur5_gripper/follow_joint_trajectory' and it is used to control the gripper
+Create and action server for the UR10 gripper. The action server is called
+'ur10_gripper/follow_joint_trajectory' and it is used to control the gripper
 joints in Isaac Sim.
 """
 import copy
@@ -24,7 +24,7 @@ from ur5_isaac_simulation.helper_functions.load_ros_parameters import \
     get_ros_parameters
 
 
-class UR5GripperTrajController(Node):
+class UR10GripperTrajController(Node):
     """
     Create and handle the action 'follow_joint_trajectory' server.
 
@@ -36,7 +36,7 @@ class UR5GripperTrajController(Node):
     - left_inner_finger -> left_inner_finger_pad_joint (fixed)
 
     """
-
+    # 检查
     joint_names = ["finger_joint", "right_outer_knuckle_joint"]
 
     def __init__(self):
@@ -67,14 +67,14 @@ class UR5GripperTrajController(Node):
 
         self.contact_state = None
         self.create_subscription(Float32MultiArray,
-                                 '/ur5_contact_publisher',
+                                 '/ur10_contact_publisher',
                                  self.update_contact_state,
                                  10,
                                  callback_group=client_cb_group)
 
         self.robotserver = ActionServer(self,
                                         FollowJointTrajectory,
-                                        "ur5_gripper/follow_joint_trajectory",
+                                        "ur10_gripper/follow_joint_trajectory",
                                         self.execute_callback,
                                         callback_group=client_cb_group)
         self.get_logger().info('gripper_controler_sever [ON]!')
@@ -137,13 +137,13 @@ class UR5GripperTrajController(Node):
         """
         Get simulated Robotiq gripper contact state.
 
-        ur5_contact_publisher topic is published by the custom Isaac Sim
+        ur10_contact_publisher topic is published by the custom Isaac Sim
         action graph node called ROS2ContactPublish.
 
         Parameters
         ----------
         msg : Float32MultiArray
-            Float32MultiArray message from the /ur5_contact_publisher topic.
+            Float32MultiArray message from the /ur10_contact_publisher topic.
             The array data contains the following values in order:
             - force applied to the gripper left gripper pad (float)
             - force applied to the gripper right gripper pad (float)
@@ -207,8 +207,8 @@ class UR5GripperTrajController(Node):
         """Initialize a new target trajectory."""
         self.actual_joint_state = copy.deepcopy(self.joint_states)
 
-        print("\n-------- UR5 Gripper -------- ")
-        print(f"Actual joint states (UR5 Gripper): {self.actual_joint_state}")
+        print("\n-------- UR10 Gripper -------- ")
+        print(f"Actual joint states (UR10 Gripper): {self.actual_joint_state}")
         print("----------------------- \n")
 
         self.time_t0 = time.time()
@@ -424,18 +424,18 @@ class UR5GripperTrajController(Node):
 def main(args=None):
     """Main function."""
     rclpy.init(args=args)
-    ur5_gripper_server = UR5GripperTrajController()
+    ur10_gripper_server = UR10GripperTrajController()
     executor = MultiThreadedExecutor()
-    executor.add_node(ur5_gripper_server)
+    executor.add_node(ur10_gripper_server)
 
     try:
-        ur5_gripper_server.get_logger().info(
+        ur10_gripper_server.get_logger().info(
             '[GRIPPER] Beginning client, shut down with CTRL-C')
         executor.spin()
     except KeyboardInterrupt:
-        ur5_gripper_server.get_logger().info(
+        ur10_gripper_server.get_logger().info(
             '[GRIPPER] Keyboard interrupt, shutting down.\n')
-    ur5_gripper_server.destroy_node()
+    ur10_gripper_server.destroy_node()
     rclpy.shutdown()
 
 
