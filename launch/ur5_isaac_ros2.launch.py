@@ -9,6 +9,7 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
+    # 应该是不需要 添加 一会再仔细看一下
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
@@ -38,10 +39,11 @@ def generate_launch_description():
         output="both",
         parameters=[robot_description],
     )
+    # 存在
     rviz_config_file = PathJoinSubstitution(
         [FindPackageShare("ur5_isaac_simulation"), "config", "ur5_rviz.rviz"]
     )
-
+    # 存在
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
@@ -49,7 +51,10 @@ def generate_launch_description():
         output={'both': 'log'},
         arguments=["-d", rviz_config_file],
     )
-
+    #################
+    #####TO DO#######
+    #################
+    
     ur5_traj_server = Node(
         package='ur5_isaac_simulation',
         name='ur5_controller',
@@ -62,6 +67,10 @@ def generate_launch_description():
         executable='gripper_controller'
     )
 
+    #################
+    #####TO DO#######
+    #################
+    
     nodes_to_start = [
         ur5_traj_server,
         gripper_traj_server,
