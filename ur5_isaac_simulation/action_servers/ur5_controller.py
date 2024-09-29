@@ -17,6 +17,7 @@ from rclpy.parameter import Parameter
 from sensor_msgs.msg import JointState
 # 检查
 from ur5_isaac_simulation.helper_functions import trajectory_check as tc
+# 着重检查这个文件
 from ur5_isaac_simulation.helper_functions.load_ros_parameters import \
     get_ros_parameters
 
