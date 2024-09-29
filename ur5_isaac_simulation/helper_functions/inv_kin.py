@@ -13,6 +13,10 @@ MAT = np.matrix
 TRANSL_PARAM_Z = np.array([0.089159, 0, 0, 0, 0.10915, 0.09465, 0.0823])
 TRANSL_PARAM_X = np.array([0, 0, -0.425, -0.39225, 0, 0, 0])
 ROT_PARAM_X = np.array([0, np.pi/2, 0, 0, 0, 0, -np.pi/2])
+# for UR10
+#TRANSL_PARAM_Z = np.array([0.1273, 0, 0, 0, 0.163941, 0.1157, 0.0922])
+#TRANSL_PARAM_X = np.array([0, 0, -0.612, -0.5723, 0, 0, 0])
+#ROT_PARAM_X = np.array([0, np.pi/2, 0, 0, 0, 0, -np.pi/2])
 
 
 def htm_base_link_inertia_to_shoulder_link(theta1: float) -> np.matrix:
