@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# 关键词 检查
+
 import copy
 import math
 import time
@@ -13,16 +15,16 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from sensor_msgs.msg import JointState
-
+# 检查
 from ur5_isaac_simulation.helper_functions import trajectory_check as tc
 from ur5_isaac_simulation.helper_functions.load_ros_parameters import \
     get_ros_parameters
 
 
-class UR5TrajController(Node):
+class UR10TrajController(Node):
     """Create and handle the action 'follow_joint_trajectory' server."""
 
-    ur5_joint_names = [
+    ur10_joint_names = [
         "shoulder_pan_joint",
         "shoulder_lift_joint",
         "elbow_joint",
@@ -32,18 +34,18 @@ class UR5TrajController(Node):
     ]
 
     def __init__(self):
-        super().__init__('ur5_controller_server')
+        super().__init__('ur10_controller_server') #声明 controller server
 
         ###############################
         # ROS PARAMETERS
         ###############################
         self.ros_parameters, declared_parameters =\
-            get_ros_parameters("ur5_controller_server")
+            get_ros_parameters("ur10_controller_server")
         self.declare_parameters(namespace='',
                                 parameters=declared_parameters)
         self.get_logger().info("Parameters:")
         for param, value in declared_parameters:
-            self.get_logger().info(f"\t[UR5] {param}: {value}")
+            self.get_logger().info(f"\t[UR10] {param}: {value}")
         self.add_on_set_parameters_callback(self.parameters_callback)
 
         self.robot_isaac_pub = self.create_publisher(JointState,
@@ -57,14 +59,15 @@ class UR5TrajController(Node):
                                  self.update_joint_state,
                                  10,
                                  callback_group=client_cb_group)
-
+        # 检查
+        # ur5/follow_joint_trajectory 是这个action server的名字
         self.robotserver = ActionServer(
             self,
             FollowJointTrajectory,
-            "ur5/follow_joint_trajectory",
+            "ur10/follow_joint_trajectory",
             self.execute_callback,
             callback_group=client_cb_group)
-        self.get_logger().info('ur5_controller_server [ON]!')
+        self.get_logger().info('ur10_controller_server [ON]!')
 
         self.actual_joint_state = []
         self.trajectory_position_list = []
@@ -92,7 +95,7 @@ class UR5TrajController(Node):
         self,
         msg: JointState
     ):
-        """Get simulated UR5 joint angles in the following order:
+        """Get simulated UR10 joint angles in the following order:
 
         shoulder_pan_joint, shoulder_lift_joint, elbow_joint
         wrist_1_joint, wrist_2_joint, wrist_3_joint
@@ -120,7 +123,7 @@ class UR5TrajController(Node):
 
         """
         if not self.trajectory_in_execution:
-            self.get_logger().info('[UR5] Executing goal...')
+            self.get_logger().info('[UR10] Executing goal...')
 
             self.init_trajectory_robot()
             initialized_correctly, msg =\
@@ -129,7 +132,7 @@ class UR5TrajController(Node):
                 result, total_time_from_init =\
                     await self.execute_trajectory(goal_handle)
                 self.get_logger().info(
-                    "[UR5] Trajectory executed "
+                    "[UR10] Trajectory executed "
                     f"in {total_time_from_init:.2f} seconds")
                 goal_handle.succeed()
                 return result
@@ -142,19 +145,19 @@ class UR5TrajController(Node):
         # Set goal state
 
         # set goal_handle as not accepted
-        self.get_logger().warn("[UR5] Trajectory already in execution")
+        self.get_logger().warn("[UR10] Trajectory already in execution")
         result = FollowJointTrajectory.Result()
         result._error_code = result.INVALID_GOAL
         result._error_string =\
-            "[UR5] Failed. A trajectory is already in execution"
+            "[UR10] Failed. A trajectory is already in execution"
         return result
 
     def init_trajectory_robot(self):
         """Initialize a new target trajectory."""
         self.actual_joint_state = copy.deepcopy(self.joint_states)
 
-        print("\n-------- UR5 -------- ")
-        print(f"Actual joint states (UR5): {self.actual_joint_state}")
+        print("\n-------- UR10 -------- ")
+        print(f"Actual joint states (UR10): {self.actual_joint_state}")
         print("----------------------- \n")
 
         self.time_t0 = time.time()
@@ -178,24 +181,24 @@ class UR5TrajController(Node):
             Error message
 
         """
-        self.get_logger().info("[UR5] Received goal")
+        self.get_logger().info("[UR10] Received goal")
 
         self.received_goal_handle = received_goal_handle
         if not tc.trajectory_is_finite(received_goal_handle.request.trajectory):
-            error_msg = ("[UR5] Trajectory not executed."
+            error_msg = ("[UR10] Trajectory not executed."
                          " Received a goal with infinites or NaNs")
             self.get_logger().error(error_msg)
             received_goal_handle.abort()
             return False, error_msg
         # Checks that the trajectory has velocities
         if not tc.has_velocities(received_goal_handle.request.trajectory):
-            error_msg = "[UR5] Received a goal without velocities"
+            error_msg = "[UR10] Received a goal without velocities"
             self.get_logger().error(error_msg)
             received_goal_handle.abort()
             return False, error_msg
 
         if self.actual_joint_state is None:
-            error_msg = "[UR5] No joint state received yet"
+            error_msg = "[UR10] No joint state received yet"
             self.get_logger().error(error_msg)
             received_goal_handle.abort()
             return False, error_msg
@@ -212,16 +215,16 @@ class UR5TrajController(Node):
 
         option = self.ros_parameters['trajectory_type']
         if option == 1:
-            self.get_logger().info("[UR5] Initializing cubic trajectory")
+            self.get_logger().info("[UR10] Initializing cubic trajectory")
             self.init_interp_cubic()
         elif option == 2:
-            self.get_logger().info("[UR5] Initializing quintic trajectory")
+            self.get_logger().info("[UR10] Initializing quintic trajectory")
             self.init_interp_quintic()
         elif option == 3:
-            self.get_logger().info("[UR5] Initializing LSPB trajectory")
+            self.get_logger().info("[UR10] Initializing LSPB trajectory")
             self.init_lspb_trajectory()
         elif option == 4:
-            self.get_logger().info("[UR5] Initializing minimum time trajectory")
+            self.get_logger().info("[UR10] Initializing minimum time trajectory")
             # Minimum Time Trajectories
             self.init_minimum_time_trajectory()
 
@@ -473,7 +476,7 @@ class UR5TrajController(Node):
             Result of the trajectory execution
 
         """
-        self.get_logger().info("[UR5] Executing trajectory")
+        self.get_logger().info("[UR10] Executing trajectory")
         result = FollowJointTrajectory.Result()
         result._error_code = result.INVALID_GOAL
         if goal_handle is not None:
@@ -490,7 +493,7 @@ class UR5TrajController(Node):
                 position, velocity = self.sample_trajectory()
                 self.actual_trajectory_to_send.header.stamp =\
                     self.get_clock().now().to_msg()
-                self.actual_trajectory_to_send.name = self.ur5_joint_names
+                self.actual_trajectory_to_send.name = self.ur10_joint_names
                 self.actual_trajectory_to_send.position = position
                 self.actual_trajectory_to_send.velocity = velocity
 
@@ -507,12 +510,12 @@ class UR5TrajController(Node):
 
             feedback = FollowJointTrajectory.Feedback()
             feedback.header.stamp = self.get_clock().now().to_msg()
-            feedback.joint_names = self.ur5_joint_names
+            feedback.joint_names = self.ur10_joint_names
             feedback.desired.positions = self.trajectory_position_list[-1]
             feedback.actual.positions = self.joint_states
             feedback.error.positions = [
                 a - b for a, b in zip(self.trajectory_position_list[-1], self.joint_states)]
-            self.get_logger().info("[UR5] Feedback:")
+            self.get_logger().info("[UR10] Feedback:")
             self.get_logger().info(f"\tDesired: {feedback.desired.positions}")
             self.get_logger().info(f"\tActual: {feedback.actual.positions}")
             self.get_logger().info(f"\tError: {feedback.error.positions}")
@@ -524,9 +527,9 @@ class UR5TrajController(Node):
                 self.received_goal_handle = None
             else:
                 result._error_string =\
-                    ("[UR5] Failed. Joint states not in tolerance. Time exceeded.")
+                    ("[UR10] Failed. Joint states not in tolerance. Time exceeded.")
                 self.get_logger().warn(
-                    f"[UR5] [TIMEOUT] {total_time_from_init} seconds")
+                    f"[UR10] [TIMEOUT] {total_time_from_init} seconds")
 
             self.trajectory_in_execution = False
             return result, total_time_from_init
@@ -535,18 +538,18 @@ class UR5TrajController(Node):
 def main(args=None):
     """Main function."""
     rclpy.init(args=args)
-    ur5_isaac_server = UR5TrajController()
+    ur10_isaac_server = UR10TrajController()
     executor = MultiThreadedExecutor()
-    executor.add_node(ur5_isaac_server)
+    executor.add_node(ur10_isaac_server)
 
     try:
-        ur5_isaac_server.get_logger().info(
-            '[UR5] Beginning client, shut down with CTRL-C')
+        ur10_isaac_server.get_logger().info(
+            '[UR10] Beginning client, shut down with CTRL-C')
         executor.spin()
     except KeyboardInterrupt:
-        ur5_isaac_server.get_logger().info(
-            '[UR5] Keyboard interrupt, shutting down.\n')
-    ur5_isaac_server.destroy_node()
+        ur10_isaac_server.get_logger().info(
+            '[UR10] Keyboard interrupt, shutting down.\n')
+    ur10_isaac_server.destroy_node()
     rclpy.shutdown()
 
 
